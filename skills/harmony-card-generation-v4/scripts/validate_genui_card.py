@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Validate a HarmonyOS GenUI desktop-card DSL artifact.
+校验 HarmonyOS GenUI 桌面卡片 DSL 产物。
 
-Accepts JSONL messages or a JSON array of messages. The final deliverable should
-still be JSONL: createSurface, updateComponents, updateDataModel.
+接受 JSONL 消息或 JSON 消息数组。最终交付物仍应为 JSONL：
+createSurface、updateComponents、updateDataModel。
 """
 
 from __future__ import annotations
@@ -108,17 +108,27 @@ PLACEHOLDER_URL_RE = re.compile(
     r"https?://(?:example\.com|placeholder\.com|via\.placeholder\.com|picsum\.photos|dummyimage\.com)",
     re.IGNORECASE,
 )
+PROTECTED_TEXT_HINT_RE = re.compile(
+    r"(time|date|day|weekday|status|badge|cta|action|button|title|name|price|"
+    r"percent|percentage|battery|temperature|temp|countdown|count|metric|value)",
+    re.IGNORECASE,
+)
+COMPRESSIBLE_TEXT_HINT_RE = re.compile(
+    r"(meta|subtitle|subTitle|description|desc|detail|location|body|summary|"
+    r"advisory|note|hint|secondary)",
+    re.IGNORECASE,
+)
 
 
 def load_messages(path: Path) -> list[dict[str, Any]]:
     text = path.read_text(encoding="utf-8-sig").strip()
     if not text:
-        raise ValueError("file is empty")
+        raise ValueError("文件为空")
 
     if text[0] == "[":
         data = json.loads(text)
         if not isinstance(data, list):
-            raise ValueError("top-level JSON array expected")
+            raise ValueError("应为顶层 JSON 数组")
         return data
 
     messages: list[dict[str, Any]] = []
@@ -129,9 +139,9 @@ def load_messages(path: Path) -> list[dict[str, Any]]:
         try:
             message = json.loads(line)
         except json.JSONDecodeError as exc:
-            raise ValueError(f"line {line_no}: invalid JSON: {exc}") from exc
+            raise ValueError(f"第 {line_no} 行：JSON 无效：{exc}") from exc
         if not isinstance(message, dict):
-            raise ValueError(f"line {line_no}: message must be a JSON object")
+            raise ValueError(f"第 {line_no} 行：消息必须是 JSON object")
         messages.append(message)
     return messages
 
@@ -162,9 +172,9 @@ def referenced_ids(component: dict[str, Any]) -> list[str]:
     if isinstance(children, list):
         refs.extend(item for item in children if isinstance(item, str))
     elif isinstance(children, dict):
-        template_id = children.get("componentId")
-        if isinstance(template_id, str):
-            refs.append(template_id)
+        repeated_item_id = children.get("componentId")
+        if isinstance(repeated_item_id, str):
+            refs.append(repeated_item_id)
 
     for field in ("childrenIf", "childrenElse"):
         value = component.get(field)
@@ -178,15 +188,15 @@ def referenced_ids(component: dict[str, Any]) -> list[str]:
     return refs
 
 
-def template_descendant_ids(components: list[dict[str, Any]]) -> set[str]:
+def repeated_item_descendant_ids(components: list[dict[str, Any]]) -> set[str]:
     index = component_index(components)
-    template_roots: set[str] = set()
+    repeated_item_roots: set[str] = set()
     for component in components:
         children = component.get("children")
         if isinstance(children, dict):
-            template_id = children.get("componentId")
-            if isinstance(template_id, str):
-                template_roots.add(template_id)
+            repeated_item_id = children.get("componentId")
+            if isinstance(repeated_item_id, str):
+                repeated_item_roots.add(repeated_item_id)
 
     descendants: set[str] = set()
 
@@ -200,7 +210,7 @@ def template_descendant_ids(components: list[dict[str, Any]]) -> set[str]:
         for ref in referenced_ids(child):
             walk(ref)
 
-    for root in template_roots:
+    for root in repeated_item_roots:
         walk(root)
     return descendants
 
@@ -243,36 +253,36 @@ def pointer_exists(root: Any, pointer: str) -> bool:
 
 def check_action(action: Any, cid: str, errors: list[str]) -> None:
     if not isinstance(action, dict):
-        errors.append(f"{cid}: action must be an object")
+        errors.append(f"{cid}: action 必须是 object")
         return
     has_event = "event" in action
     has_call = "functionCall" in action
     if has_event == has_call:
-        errors.append(f"{cid}: action must contain exactly one of event or functionCall")
+        errors.append(f"{cid}: action 必须且只能包含 event 或 functionCall 之一")
         return
     if has_event:
         event = action.get("event")
         if not isinstance(event, dict) or not isinstance(event.get("name"), str) or not event.get("name"):
-            errors.append(f"{cid}: action.event.name is required")
+            errors.append(f"{cid}: action.event.name 是必需字段")
     if has_call:
         call = action.get("functionCall")
         if not isinstance(call, dict) or not isinstance(call.get("call"), str) or not call.get("call"):
-            errors.append(f"{cid}: action.functionCall.call is required")
+            errors.append(f"{cid}: action.functionCall.call 是必需字段")
 
 
 def check_event_handlers(value: Any, cid: str, field: str, errors: list[str]) -> None:
     if not isinstance(value, list):
-        errors.append(f"{cid}: {field} must be an EventHandler array")
+        errors.append(f"{cid}: {field} 必须是 EventHandler 数组")
         return
     for idx, handler in enumerate(value):
         if not isinstance(handler, dict):
-            errors.append(f"{cid}: {field}[{idx}] must be an object")
+            errors.append(f"{cid}: {field}[{idx}] 必须是 object")
             continue
         call = handler.get("call")
         if not isinstance(call, str) or not call:
-            errors.append(f"{cid}: {field}[{idx}].call is required")
+            errors.append(f"{cid}: {field}[{idx}].call 是必需字段")
         if isinstance(call, str) and EXPR_RE.match(call.strip()):
-            errors.append(f"{cid}: {field}[{idx}].call must not be an expression")
+            errors.append(f"{cid}: {field}[{idx}].call 不能是表达式")
 
 
 def check_styles(component: dict[str, Any], errors: list[str]) -> None:
@@ -282,36 +292,62 @@ def check_styles(component: dict[str, Any], errors: list[str]) -> None:
     if styles is None:
         return
     if not isinstance(styles, dict):
-        errors.append(f"{cid}: styles must be an object")
+        errors.append(f"{cid}: styles 必须是 object")
         return
 
     allowed = COMMON_STYLE_KEYS | STYLE_KEYS_BY_COMPONENT.get(str(ctype), set())
     if ctype == "If":
-        errors.append(f"{cid}: If is virtual and must not define styles")
+        errors.append(f"{cid}: If 是虚拟组件，不能定义 styles")
         return
 
     for key, value in styles.items():
         if key in CSS_STYLE_ALIASES:
-            errors.append(f"{cid}: use GenUI camelCase style key instead of CSS key {key!r}")
+            errors.append(f"{cid}: 请使用 GenUI camelCase 样式键，不要使用 CSS 键 {key!r}")
             continue
         if key not in allowed:
-            errors.append(f"{cid}: unknown or unsupported style key {key!r} for {ctype}")
+            errors.append(f"{cid}: {ctype} 存在未知或不受支持的样式键 {key!r}")
             continue
 
         if key in STYLE_ENUMS and isinstance(value, str) and not EXPR_RE.match(value):
             if value not in STYLE_ENUMS[key]:
-                errors.append(f"{cid}: styles.{key} must be one of {sorted(STYLE_ENUMS[key])}, got {value!r}")
+                errors.append(f"{cid}: styles.{key} 必须是 {sorted(STYLE_ENUMS[key])} 之一，当前为 {value!r}")
 
         if key in {"backgroundColor", "borderColor", "fontColor", "color"}:
             if isinstance(value, str) and not EXPR_RE.match(value) and not COLOR_RE.match(value):
-                errors.append(f"{cid}: styles.{key} must be #RRGGBB or #AARRGGBB, got {value!r}")
+                errors.append(f"{cid}: styles.{key} 必须是 #RRGGBB 或 #AARRGGBB，当前为 {value!r}")
 
         if key in {"width", "height", "borderWidth", "fontSize", "minFontSize", "maxFontSize", "strokeWidth"}:
             if isinstance(value, str) and not EXPR_RE.match(value):
                 if value not in {"matchParent", "wrapContent", "fixAtIdealSize"} and not DIMENSION_RE.match(value):
-                    errors.append(f"{cid}: styles.{key} has unsupported dimension string {value!r}")
+                    errors.append(f"{cid}: styles.{key} 使用了不受支持的尺寸字符串 {value!r}")
             elif isinstance(value, (int, float)) and value < 0:
-                errors.append(f"{cid}: styles.{key} must be non-negative")
+                errors.append(f"{cid}: styles.{key} 必须是非负数")
+
+
+def text_component_hint(component: dict[str, Any]) -> str:
+    parts: list[str] = []
+    cid = component.get("id")
+    if isinstance(cid, str):
+        parts.append(cid)
+
+    content = component.get("content")
+    if isinstance(content, str):
+        parts.append(content)
+    elif isinstance(content, dict):
+        path = content.get("path")
+        if isinstance(path, str):
+            parts.append(path)
+
+    return " ".join(parts)
+
+
+def is_likely_protected_text(component: dict[str, Any]) -> bool:
+    hint = text_component_hint(component)
+    if not hint:
+        return False
+    if COMPRESSIBLE_TEXT_HINT_RE.search(hint):
+        return False
+    return bool(PROTECTED_TEXT_HINT_RE.search(hint))
 
 
 def validate(messages: list[dict[str, Any]]) -> tuple[list[str], list[str]]:
@@ -319,30 +355,30 @@ def validate(messages: list[dict[str, Any]]) -> tuple[list[str], list[str]]:
     warnings: list[str] = []
 
     if len(messages) < 3:
-        warnings.append("expected at least createSurface, updateComponents, and updateDataModel messages")
+        warnings.append("预期至少包含 createSurface、updateComponents 和 updateDataModel 三类消息")
 
     for idx, message in enumerate(messages, start=1):
         if message.get("version") != "v0.9":
-            errors.append(f"message {idx}: version must be 'v0.9'")
+            errors.append(f"第 {idx} 条消息：version 必须是 'v0.9'")
         body_keys = [key for key in ("createSurface", "updateComponents", "updateDataModel", "deleteSurface") if key in message]
         if len(body_keys) != 1:
-            errors.append(f"message {idx}: must contain exactly one A2UI message body, got {body_keys}")
+            errors.append(f"第 {idx} 条消息：必须且只能包含一个 GenUI 消息体，当前为 {body_keys}")
 
     create_messages = [m["createSurface"] for m in messages if isinstance(m.get("createSurface"), dict)]
     component_messages = [m["updateComponents"] for m in messages if isinstance(m.get("updateComponents"), dict)]
     data_messages = [m["updateDataModel"] for m in messages if isinstance(m.get("updateDataModel"), dict)]
 
     if not create_messages:
-        errors.append("missing createSurface")
+        errors.append("缺少 createSurface")
     else:
         catalog = create_messages[0].get("catalogId")
         if catalog != EXTENDED_CATALOG:
-            errors.append(f"createSurface.catalogId must be {EXTENDED_CATALOG!r}, got {catalog!r}")
+            errors.append(f"createSurface.catalogId 必须是 {EXTENDED_CATALOG!r}，当前为 {catalog!r}")
 
     if not component_messages:
-        errors.append("missing updateComponents")
+        errors.append("缺少 updateComponents")
     if not data_messages:
-        errors.append("missing updateDataModel")
+        errors.append("缺少 updateDataModel")
 
     surface_ids = []
     for body in create_messages + component_messages + data_messages:
@@ -350,13 +386,13 @@ def validate(messages: list[dict[str, Any]]) -> tuple[list[str], list[str]]:
         if isinstance(sid, str) and sid:
             surface_ids.append(sid)
         else:
-            errors.append("message body missing non-empty surfaceId")
+            errors.append("消息体缺少非空 surfaceId")
     if surface_ids and len(set(surface_ids)) != 1:
-        errors.append(f"surfaceId mismatch: {sorted(set(surface_ids))}")
+        errors.append(f"surfaceId 不一致：{sorted(set(surface_ids))}")
 
     components = collect_components(messages)
     if not components:
-        errors.append("updateComponents.components is empty")
+        errors.append("updateComponents.components 为空")
         return errors, warnings
 
     ids: set[str] = set()
@@ -364,16 +400,16 @@ def validate(messages: list[dict[str, Any]]) -> tuple[list[str], list[str]]:
         cid = component.get("id")
         ctype = component.get("component")
         if not isinstance(cid, str) or not cid:
-            errors.append(f"component missing non-empty id: {component}")
+            errors.append(f"component 缺少非空 id：{component}")
             continue
         if cid in ids:
-            errors.append(f"duplicate component id: {cid}")
+            errors.append(f"component id 重复：{cid}")
         ids.add(cid)
         if ctype not in ALLOWED_COMPONENTS:
-            errors.append(f"{cid}: unsupported component {ctype!r}")
+            errors.append(f"{cid}: 不支持的组件 {ctype!r}")
 
     if "root" not in ids:
-        errors.append("missing root component")
+        errors.append("缺少 root 组件")
 
     all_refs: set[str] = set()
     for component in components:
@@ -384,35 +420,45 @@ def validate(messages: list[dict[str, Any]]) -> tuple[list[str], list[str]]:
 
         if ctype == "Text":
             if "text" in component:
-                errors.append(f"{cid}: extended Text must use content, not text")
+                errors.append(f"{cid}: extended Text 必须使用 content，不能使用 text")
             if "content" not in component:
-                errors.append(f"{cid}: Text.content is required")
+                errors.append(f"{cid}: Text.content 是必需字段")
+            styles = component.get("styles")
+            if (
+                isinstance(styles, dict)
+                and styles.get("textOverflow") in {"ellipsis", "clip", "marquee"}
+                and is_likely_protected_text(component)
+            ):
+                warnings.append(
+                    f"{cid}: 疑似受保护文本使用了 textOverflow={styles.get('textOverflow')!r}；"
+                    "关键信息应通过重新平衡宽度、字体或行结构来完整显示"
+                )
         elif ctype == "Image":
             if "url" in component:
-                errors.append(f"{cid}: extended Image must use src, not url")
+                errors.append(f"{cid}: extended Image 必须使用 src，不能使用 url")
             if "src" not in component:
-                errors.append(f"{cid}: Image.src is required")
+                errors.append(f"{cid}: Image.src 是必需字段")
         elif ctype == "Button":
             if "child" in component:
-                errors.append(f"{cid}: extended Button must use label, not child")
+                errors.append(f"{cid}: extended Button 必须使用 label，不能使用 child")
             if "label" not in component:
-                errors.append(f"{cid}: Button.label is required")
+                errors.append(f"{cid}: Button.label 是必需字段")
             if "action" in component:
                 check_action(component["action"], cid, errors)
             if "action" in component and "onClick" in component:
-                warnings.append(f"{cid}: Button.action has priority over onClick")
+                warnings.append(f"{cid}: Button.action 优先于 onClick")
         elif ctype in {"Row", "Column"}:
             if "children" not in component:
-                errors.append(f"{cid}: {ctype}.children is required")
+                errors.append(f"{cid}: {ctype}.children 是必需字段")
         elif ctype == "If":
             if "condition" not in component:
-                errors.append(f"{cid}: If.condition is required")
+                errors.append(f"{cid}: If.condition 是必需字段")
             elif not isinstance(component.get("condition"), str) or not EXPR_RE.match(component["condition"].strip()):
-                errors.append(f"{cid}: If.condition must be a full {{ ... }} expression")
+                errors.append(f"{cid}: If.condition 必须是完整的 {{ ... }} 表达式")
 
         for field, allowed in COMPONENT_ENUMS.get(str(ctype), {}).items():
             if field in component and component[field] not in allowed:
-                errors.append(f"{cid}: {field} must be one of {sorted(allowed)}, got {component[field]!r}")
+                errors.append(f"{cid}: {field} 必须是 {sorted(allowed)} 之一，当前为 {component[field]!r}")
 
         for event_field in ("onClick", "onAppear", "onChange", "onReachStart", "onReachEnd"):
             if event_field in component:
@@ -422,7 +468,7 @@ def validate(messages: list[dict[str, Any]]) -> tuple[list[str], list[str]]:
 
     missing = sorted(ref for ref in all_refs if ref not in ids)
     if missing:
-        errors.append(f"undefined referenced component ids: {missing}")
+        errors.append(f"引用了未定义的 component id：{missing}")
 
     data_value = {}
     data_path = "/"
@@ -430,41 +476,43 @@ def validate(messages: list[dict[str, Any]]) -> tuple[list[str], list[str]]:
         data_body = data_messages[-1]
         data_path = data_body.get("path", "/")
         if not isinstance(data_path, str) or not data_path.startswith("/"):
-            errors.append(f"updateDataModel.path must be a JSON Pointer, got {data_path!r}")
+            errors.append(f"updateDataModel.path 必须是 JSON Pointer，当前为 {data_path!r}")
         data_value = data_body.get("value", {})
 
-    template_ids = template_descendant_ids(components)
+    repeated_item_ids = repeated_item_descendant_ids(components)
     for component in components:
         cid = str(component.get("id", "<unknown>"))
         for bind_cid, location, path_value in iter_path_bindings(component, cid):
             if "." in path_value:
-                errors.append(f"{bind_cid}: {location} uses dotted path {path_value!r}; use '/' or relative field paths")
+                errors.append(f"{bind_cid}: {location} 使用了点路径 {path_value!r}；请使用 '/' 或相对字段路径")
             if path_value.startswith("/"):
                 if data_path == "/" and not pointer_exists(data_value, path_value):
-                    warnings.append(f"{bind_cid}: {location} points to missing DataModel path {path_value!r}")
-            elif bind_cid not in template_ids:
-                errors.append(f"{bind_cid}: {location} uses relative path {path_value!r} outside a template subtree")
+                    warnings.append(f"{bind_cid}: {location} 指向缺失的 DataModel 路径 {path_value!r}")
+            elif bind_cid not in repeated_item_ids:
+                errors.append(f"{bind_cid}: {location} 在重复项子树外使用了相对路径 {path_value!r}")
 
     root = component_index(components).get("root")
     if root:
         styles = root.get("styles", {})
         if isinstance(styles, dict):
-            if styles.get("width") != "100%":
-                warnings.append("root.styles.width should usually be '100%' for desktop cards")
+            if styles.get("width") not in ("100%", 160, 320, "160", "320", "160vp", "320vp"):
+                warnings.append("root.styles.width 通常应为 2x2 的 160、横版 2x4 的 320，或宿主要求时的 '100%'")
             if "height" not in styles:
-                warnings.append("root.styles.height is missing; compact templates usually use height 160")
+                warnings.append("root.styles.height 缺失；2x2 和横版 2x4 卡片高度都使用 160")
+            elif styles.get("height") not in (160, "160", "160vp"):
+                warnings.append("root.styles.height 通常应为 160，适用于 2x2 和横版 2x4 桌面卡片")
         else:
-            warnings.append("root.styles is missing")
+            warnings.append("root.styles 缺失")
 
     for component in components:
         for _, _, value in iter_path_bindings(component, str(component.get("id", "<unknown>"))):
             if isinstance(value, str) and PLACEHOLDER_URL_RE.search(value):
-                errors.append(f"{component.get('id')}: placeholder URL found in binding path")
+                errors.append(f"{component.get('id')}: 绑定路径中发现占位 URL")
     if data_messages:
         urls = collect_urls(data_messages[-1].get("value", {}))
         for url in urls:
             if PLACEHOLDER_URL_RE.search(url):
-                errors.append(f"updateDataModel contains placeholder URL: {url}")
+                errors.append(f"updateDataModel 包含占位 URL：{url}")
 
     return errors, warnings
 
@@ -484,29 +532,29 @@ def collect_urls(node: Any) -> list[str]:
 
 def main(argv: list[str]) -> int:
     if len(argv) != 2:
-        print("Usage: python validate_genui_card.py <card.dsl.jsonl>")
+        print("用法：python validate_genui_card.py <card.dsl.jsonl>")
         return 2
 
     path = Path(argv[1])
     try:
         messages = load_messages(path)
     except Exception as exc:
-        print(f"Failed to load DSL: {exc}")
+        print(f"加载 DSL 失败：{exc}")
         return 1
 
     errors, warnings = validate(messages)
     if errors:
-        print(f"Found {len(errors)} error(s):")
+        print(f"发现 {len(errors)} 个错误：")
         for error in errors:
             print(f" - {error}")
         if warnings:
-            print(f"Found {len(warnings)} warning(s):")
+            print(f"发现 {len(warnings)} 个警告：")
             for warning in warnings:
                 print(f" - {warning}")
         return 1
 
     if warnings:
-        print(f"Found {len(warnings)} warning(s):")
+        print(f"发现 {len(warnings)} 个警告：")
         for warning in warnings:
             print(f" - {warning}")
 
@@ -521,10 +569,10 @@ def main(argv: list[str]) -> int:
         if surface_id != "N/A":
             break
 
-    print("GenUI card validation passed")
-    print(f"messages: {len(messages)}")
-    print(f"components: {len(components)}")
-    print(f"surfaceId: {surface_id}")
+    print("GenUI 卡片校验通过")
+    print(f"消息数：{len(messages)}")
+    print(f"组件数：{len(components)}")
+    print(f"surfaceId：{surface_id}")
     return 0
 
 
