@@ -1,55 +1,51 @@
-# 评审和校验
+# 最终验收
 
 ## 目的
 
-首版草稿写入磁盘后，使用这个流程保持输出有效、紧凑并且视觉完整。
+首版草稿写入磁盘后，使用本文档作为唯一最终验收入口。本文档负责编排脚本校验、设计评审、受保护文本检查和最终阻塞项；不要在 `SKILL.md` 中另行并列调度 `design-review.md`。
+
+## 职责边界
+
+- 协议合法性：由 `scripts/validate_genui_card.py` 机械检查。
+- 视觉、交互、数据语义质量：按 [`design-review.md`](design-review.md) 检查。
+- 受保护文本和最终阻塞项：由本文档检查。
 
 ## 端到端流程
 
 1. 读取磁盘上的 DSL 文件；不要从记忆重新起草。
 2. 运行 `python scripts/validate_genui_card.py <file>`。
 3. 直接在同一个文件中修复校验错误，并重复运行直到通过。
-4. 脚本通过后，使用 `design-review.md` 做设计评审。
-5. 做受保护内容换行评审。
-6. 如果设计评审修改了文件，重新运行校验。
+4. 脚本通过后，读取 [`design-review.md`](design-review.md) 做视觉、交互和数据语义评审。
+5. 按本文档做受保护内容换行评审和最终阻塞项检查。
+6. 如果任何评审修改了文件，重新运行校验器。
 7. 只有在最终编辑后校验通过时才交付。
 
-## 每轮检查清单
+## 协议阻塞项
 
-每轮都检查：
+以下任一项失败都不能交付：
 
-- 模式已识别：一句话卡片、已有 DSL 评审，或能力边界。
-- 所选尺寸明确：`2x2` 或 `2x4`。
-- 输出是 JSONL，每行一个 object。
-- `createSurface.catalogId` 是 `ohos.a2ui.extended.catalog.form`。
-- `createSurface` 没有 `theme`。
-- 同一 surface 只有一次完整 `updateComponents`。
-- 所有 `surfaceId` 一致。
-- 所有 component ID 唯一，引用可解析。
-- 组件名来自 Form 支持的 10 个扩展组件。
-- 使用 extended 字段名：`content`、`src`、`label`。
-- `updateDataModel.path` 和模板 `children.path` 使用 `/` JSON Pointer。
-- 组件可见动态值默认使用完整表达式读取 `$__dataModel`。
-- 不使用 `$__widthBreakpoint` 或 `$__colorMode`。
-- 正式输出前已说明布局理由。
-- 最终输出前至少发生一次改进。
-- 不存在网络/占位媒体 URL。
-- 所有可点击视觉区域都有 `onClick`。
-- 卡片仍保持紧凑和摘要感。
-- 卡片由可泛化规则构造，而不是从所选模板构造。
+- 输出不是 JSONL，或每行不止一个 object。
+- `version` 不是 `"v0.9"`。
+- `createSurface.catalogId` 不是 `ohos.a2ui.extended.catalog.form`。
+- `createSurface` 包含 `theme`。
+- 同一 surface 有多次 `updateComponents`。
+- `surfaceId` 不一致。
+- component ID 重复或 child 引用不可解析。
+- 使用 Form 10 个支持组件之外的组件。
+- 使用 `Text.text`、`Image.url`、`Button.child`、`Button.action` 或 CSS kebab-case 样式键。
+- 使用 `onClick` 之外的事件。
+- 使用 `$__widthBreakpoint`、`$__colorMode`、网络图片 URL、SVG 或占位媒体 URL。
 
-## 组件/卡片检查
+## 卡片阻塞项
 
-- Root 尺寸匹配 `2x2`（`160 x 160vp`）或横版 `2x4`（`320 x 160vp`），或宽度响应式但仍遵守所选布局预算。
-- `2x2` 主区域 <= 3，`2x4` 主区域 <= 4。
-- 视觉焦点明显。
-- 卡片不是页面尺寸块。
-- 内部块没有变成多个互相竞争的小卡片。
-- 横向行区分受保护内容和可压缩内容。
-- CTA、时间、百分比、状态、价格和短标签保持可读。
-- 日期、星期、时间、状态、CTA、主指标、主标题和用户要求字段完整显示，不使用省略或裁剪。
-- 受保护文本上的固定宽度有明确理由。
-- 如果存在本地图片，使用 `Image.src` 和 `styles.objectFit`。
+以下任一项失败都需要修改或转入能力边界说明：
+
+- 未明确选择 `2x2` 或 `2x4`。
+- `2x2` 主区域超过 3 个，或 `2x4` 主区域超过 4 个。
+- 主要信息需要滚动、长列表、表格、段落或页面导航才能理解。
+- 卡片由示例/模板改造而来，而不是由语义角色和构图规则生成。
+- 正式输出前没有布局理由或没有至少一次显式改进。
+- 可点击视觉区域没有 `onClick` EventHandler。
 
 ## 受保护内容换行评审
 
@@ -67,8 +63,7 @@
    - 把该行拆成 `Column`
    - 选择 `2x4`，或在受保护文本仍无法完整显示时升级说明
 
-不要接受受保护短短语逐字换行。
-不要接受截图中受保护文本显示为 `...`。
+不要接受受保护短短语逐字换行。不要接受受保护文本显示为 `...`。
 
 ## 用户需求优先例外
 

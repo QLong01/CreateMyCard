@@ -11,7 +11,7 @@ description: "根据 harmonyos-a2ui-form-protocol 生成 HarmonyOS A2UI Form 服
 - 使用可泛化的构图规则构造卡片：
   - `2x2`：`160 x 160vp`
   - `2x4`：`320 x 160vp` 横版
-- 遵循自包含工作流：模式识别、按需读取参考、先说明布局理由再写 JSON、显式改进、优先落盘迭代、脚本校验和设计评审。
+- 遵循自包含工作流：模式识别、按需读取参考、先说明布局理由再写 JSON、显式改进、优先落盘迭代、脚本校验和最终验收。
 - 使用 `harmonyos-a2ui-form-protocol.md` 的 Form 裁剪协议。协议冲突时，以该协议为准。
 
 ## 执行边界
@@ -113,14 +113,26 @@ description: "根据 harmonyos-a2ui-form-protocol 生成 HarmonyOS A2UI Form 服
 2. 给出最接近的受支持 2x2 或 2x4 卡片替代方案
 3. 只有在用户接受更窄范围时，才继续询问或执行
 
-## 只读取需要的内容
+## 参考路由
 
-| 任务类型 | 必读文档 | 按需加载 |
-| --- | --- | --- |
-| 新的一句话卡片 | [`reference/protocol.md`](reference/protocol.md), [`reference/capability.md`](reference/capability.md), [`reference/card-composition-rules.md`](reference/card-composition-rules.md), [`reference/card-design.md`](reference/card-design.md), [`reference/guide.md`](reference/guide.md) | [`reference/component-catalog.md`](reference/component-catalog.md), [`reference/data-binding.md`](reference/data-binding.md), [`reference/visual-interaction.md`](reference/visual-interaction.md), [`reference/spacing-elevation.md`](reference/spacing-elevation.md), [`reference/expressiveness-toolkit.md`](reference/expressiveness-toolkit.md), [`reference/design-review.md`](reference/design-review.md) |
-| 已有 DSL 修复/评审 | [`reference/protocol.md`](reference/protocol.md), [`reference/review-validation.md`](reference/review-validation.md), [`reference/component-catalog.md`](reference/component-catalog.md), [`reference/data-binding.md`](reference/data-binding.md) | 与问题直接相关的设计文档 |
-| 校验后的视觉润色 | [`reference/design-review.md`](reference/design-review.md), [`reference/visual-interaction.md`](reference/visual-interaction.md) | [`reference/spacing-elevation.md`](reference/spacing-elevation.md), [`reference/expressiveness-toolkit.md`](reference/expressiveness-toolkit.md) |
-| 不支持请求分流 | [`reference/protocol.md`](reference/protocol.md), [`reference/capability.md`](reference/capability.md), [`reference/card-composition-rules.md`](reference/card-composition-rules.md) | 默认不需要 |
+先确定模式，再按下面路由读取。不要只看资源列表；资源列表只是索引。
+
+### 默认必读
+
+- 新卡片：[`reference/protocol.md`](reference/protocol.md)、[`reference/capability.md`](reference/capability.md)、[`reference/card-composition-rules.md`](reference/card-composition-rules.md)、[`reference/guide.md`](reference/guide.md)。
+- 已有 DSL 修复/评审：[`reference/protocol.md`](reference/protocol.md)、[`reference/review-validation.md`](reference/review-validation.md)、[`reference/component-catalog.md`](reference/component-catalog.md)、[`reference/data-binding.md`](reference/data-binding.md)。
+- 能力边界分流：[`reference/protocol.md`](reference/protocol.md)、[`reference/capability.md`](reference/capability.md)、[`reference/card-composition-rules.md`](reference/card-composition-rules.md)。
+- 最终验收：只从 [`reference/review-validation.md`](reference/review-validation.md) 进入；该文档会按需调用 [`reference/design-review.md`](reference/design-review.md)。
+
+### 条件触发
+
+- 组件、属性、样式枚举、`children` 形状不确定：读取 [`reference/component-catalog.md`](reference/component-catalog.md)。
+- 出现 `updateDataModel`、表达式、模板循环、事件参数或宿主动作 ID：读取 [`reference/data-binding.md`](reference/data-binding.md)。
+- 出现 CTA、可点击区域、`Button`、`onClick`、图片来源或媒体真实性问题：读取 [`reference/visual-interaction.md`](reference/visual-interaction.md)。
+- 需要确定 padding、`itemMargin`、圆角、阴影、半透明块或视觉层级尺度：读取 [`reference/spacing-elevation.md`](reference/spacing-elevation.md)。
+- 没有真实本地图片但需要视觉锚点，或需要渐变、字形、`Progress`、`Divider`、`Stack` 增强表现力：读取 [`reference/expressiveness-toolkit.md`](reference/expressiveness-toolkit.md)。
+- 只做视觉润色或卡片质量评审：读取 [`reference/design-review.md`](reference/design-review.md)；最终交付前仍回到 [`reference/review-validation.md`](reference/review-validation.md)。
+- 不确定该读哪个文件：先读 [`reference.md`](reference.md)，再只读它指向的相关文件。
 
 ## 输出持久化
 
@@ -148,7 +160,7 @@ description: "根据 harmonyos-a2ui-form-protocol 生成 HarmonyOS A2UI Form 服
 2. 按 [`reference/capability.md`](reference/capability.md) 确认请求是否在能力范围内。不在范围内则使用模式 3。
 3. 按 [`reference/card-composition-rules.md`](reference/card-composition-rules.md) 选择 `2x2` 或 `2x4`。
 4. 从请求中推导语义角色：identity、primary answer、metric、context、progress/trend、media、action。
-5. 读取该模式所需的设计/协议参考。
+5. 按“参考路由”读取该模式和触发条件所需的参考。
 6. 写 JSON 前必须明确说明布局理由，覆盖：
    - 选择的尺寸以及原因
    - 语义角色和主区域
@@ -164,41 +176,17 @@ description: "根据 harmonyos-a2ui-form-protocol 生成 HarmonyOS A2UI Form 服
 8. 生成并保存 JSONL 文件。
 9. 运行 `python scripts/validate_genui_card.py <path-to-dsl.jsonl>`。
 10. 直接在文件中修复校验错误，并重复运行直到通过。
-11. 脚本通过后，使用 [`reference/design-review.md`](reference/design-review.md) 做设计评审，并使用 [`reference/review-validation.md`](reference/review-validation.md) 做受保护文本换行评审。
-12. 如果设计评审修改了文件，重新运行校验器。
-13. 只有在校验通过且评审完成后交付。
+11. 脚本通过后，按 [`reference/review-validation.md`](reference/review-validation.md) 做最终验收；该文档会在需要时调用 [`reference/design-review.md`](reference/design-review.md) 做视觉、交互和数据语义评审。
+12. 如果最终验收修改了文件，重新运行校验器。
+13. 只有在校验通过且最终验收完成后交付。
 
 ## 不可妥协项
 
-- 生成必须由规则驱动。不要选择、复制或改造内置模板。
-- 每条消息使用 `version: "v0.9"`。
-- 使用 `catalogId: "ohos.a2ui.extended.catalog.form"`。
-- `createSurface` 不支持 `theme` 字段。
-- 同一 surface 只允许一次完整 `updateComponents`，不要流式或增量追加组件树。
-- 最终产物输出 JSONL，不要输出包在 Markdown 里的 JSON。
-- 使用 extended 属性名：`Text.content`、`Image.src`、`Button.label`。
-- 不要使用仅标准 catalog 的 `Text.text`、`Image.url`、`Button.child` 或 CSS kebab-case 样式键。
-- 只使用 Form 组件子集：`Text`、`Image`、`Divider`、`Progress`、`Button`、`Checkbox`、`Row`、`Column`、`List`、`Stack`。
-- 不使用 `TextInput`、`Toggle`、`Radio`、`CheckboxGroup`、`Select`、`NavContainer`、`Tabs`、`TabContent`、`Web`、`Grid`、`If` 或 A2UI 原生组件。
-- 使用扁平 `components` 邻接表和 `id` 引用。不要在 `children` 中内联组件。
-- 包含 `root` 组件，并保证所有引用可解析。
-- 目标卡片尺寸为 `2x2 = 160 x 160vp` 和横版 `2x4 = 320 x 160vp`。如果宿主要求 `width: "100%"`，仍然按所选宽度预算设计：`2x2` 为 `160vp`，`2x4` 为 `320vp`。
-- 卡片不是页面：`2x2` 主区域 <= 3，`2x4` 主区域 <= 4；不要长文案、大表格或长动态列表。
-- 正式输出前，必须有布局理由和至少一次改进。
-- 可点击 UI 必须有真实 `onClick` EventHandler 数组。Form 不使用 `Button.action`。
-- Form 只支持通用事件 `onClick`；不要使用 `onAppear`、`onChange`、`onSelect`、`onReachStart` 或 `onReachEnd`。
-- 不使用预定义扩展函数。EventHandler 的 `call` 只能引用宿主 catalog 已声明的自定义函数，或明确声明为宿主假设。
-- 不要编造远程媒体 URL。`Image.src` 和 `styles.backgroundImage` 只使用本地/资源路径；不支持网络图片或 SVG。
-- 组件属性绑定默认使用完整表达式，如 `"{{ $__dataModel.meeting.title }}"`；`updateDataModel.path` 和模板 `children.path` 使用 `/` JSON Pointer。
-- 不使用 `$__widthBreakpoint` 或 `$__colorMode`。
-- 协议模板循环只能用于 `Row`、`Column`、`List` 的 `children: { componentId, path }`。
-- 横向 `Row` 默认直接子节点 <= 3。需要更多时拆分、堆叠或使用竖向分组。
-- 时间、CTA、状态、温度、电量百分比、价格和短中文短语等受保护内容不能被挤压成碎片。
-- 关键信息默认必须完整显示：日期、星期、时间、CTA、状态、主指标/数值、主标题/名称、倒计时、价格/数量，以及用户要求显示的字段。不要依赖 `textOverflow: "ellipsis"`、`clip` 或 marquee 隐藏缺失信息。
-- `textOverflow: "ellipsis"` 只能用于明确可压缩的次要文本，例如可选地点、副标题或建议文案。如果关键值放不下，先减少 padding、itemMargin、装饰性分隔线、固定列和字体大小；再拆行、选择横版 `2x4`，或使用模式 3。
-- 每个包含两个或更多受保护文本值的 Row，在写 JSON 前都要做宽度预算：可用宽度 = 父级宽度 - 父级水平 padding - row gaps - 固定分隔线/图标 - 固定文本列。如果接近放不下，先简化该行再生成 DSL。
-- 当有 2 个以上标签时，标签组和主 CTA 不应共用一个拥挤行；放到 `Column` 内的不同行。
-- 任何手动/设计修改后，都要重新运行校验器。
+- 协议合法性不能由设计文档放宽。具体组件、事件、媒体、表达式和 catalog 约束以 [`reference/protocol.md`](reference/protocol.md)、[`reference/component-catalog.md`](reference/component-catalog.md)、[`reference/data-binding.md`](reference/data-binding.md) 为准。
+- 卡片形态不能放宽成页面。具体尺寸、区域数量、受保护文本和构图规则以 [`reference/card-composition-rules.md`](reference/card-composition-rules.md) 为准。
+- 输出必须是落盘 JSONL，并且正式输出前必须有布局理由和至少一次显式改进。
+- 每次生成、修复或最终验收后的文件改动，都必须重新运行 `scripts/validate_genui_card.py`。
+- 最终交付只能从 [`reference/review-validation.md`](reference/review-validation.md) 完成；不要绕过脚本校验或最终验收。
 
 ## 资源
 
@@ -206,7 +194,6 @@ description: "根据 harmonyos-a2ui-form-protocol 生成 HarmonyOS A2UI Form 服
 - Form 协议摘要：[`reference/protocol.md`](reference/protocol.md)
 - 能力范围：[`reference/capability.md`](reference/capability.md)
 - 可泛化卡片构造规则：[`reference/card-composition-rules.md`](reference/card-composition-rules.md)
-- 卡片设计：[`reference/card-design.md`](reference/card-design.md)
 - DSL 指南：[`reference/guide.md`](reference/guide.md)
 - 组件目录：[`reference/component-catalog.md`](reference/component-catalog.md)
 - 数据绑定：[`reference/data-binding.md`](reference/data-binding.md)
@@ -214,5 +201,5 @@ description: "根据 harmonyos-a2ui-form-protocol 生成 HarmonyOS A2UI Form 服
 - 间距和层级：[`reference/spacing-elevation.md`](reference/spacing-elevation.md)
 - 表现力工具箱：[`reference/expressiveness-toolkit.md`](reference/expressiveness-toolkit.md)
 - 设计评审：[`reference/design-review.md`](reference/design-review.md)
-- 评审和校验：[`reference/review-validation.md`](reference/review-validation.md)
+- 最终验收：[`reference/review-validation.md`](reference/review-validation.md)
 - 校验脚本：[`scripts/validate_genui_card.py`](scripts/validate_genui_card.py)
