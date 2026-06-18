@@ -141,7 +141,7 @@ description: "根据 harmonyos-a2ui-form-protocol 生成 HarmonyOS A2UI Form 服
 
 ## 输出格式
 
-最终交付只有一个组合结果，由两个 Markdown 代码块组成：
+最终交付只有一个组合结果，由两个代码块组成：
 
 ```genui
 {"version":"v0.9","createSurface":{...}}
@@ -158,8 +158,9 @@ description: "根据 harmonyos-a2ui-form-protocol 生成 HarmonyOS A2UI Form 服
 
 规则：
 
-- `genui` 块只输出 A2UI JSONL，每行是一条完整 JSON 消息，不要混入解释文字。
-- `cardspec` 块只输出一个完整 JSON 对象，不要混入解释文字。
+- 直接输出 `genui` 块和 `cardspec` 块；前后不要加解释、标题、路径或总结。
+- `genui` 块只输出 A2UI JSONL，每行是一条完整 JSON 消息。
+- `cardspec` 块只输出一个完整 JSON 对象。
 - `genui` 和 `cardspec` 是同一个 V5 卡片结果的两个部分，不要把 CardSpec 当外挂、附件或另一个项目产物。
 - 静态卡片也输出 `cardspec`；可以只包含 `suggestSize`，不要虚构 `dataBindings`。
 - 动态卡片必须在 `cardspec.dataBindings` 中声明端侧能力调用。
@@ -208,7 +209,7 @@ description: "根据 harmonyos-a2ui-form-protocol 生成 HarmonyOS A2UI Form 服
 - 使用 `catalogId: "ohos.a2ui.extended.catalog"`。
 - `createSurface` 不支持 `theme` 字段。
 - 同一 surface 只允许一次完整 `updateComponents`，不要流式或增量追加组件树。
-- 最终响应只输出 `genui` 与 `cardspec` 两个代码块；不要输出文件路径、包裹说明或额外 Markdown 解释。
+- 最终响应只输出 `genui` 与 `cardspec` 两个代码块；不要输出文件路径、标题、总结或额外解释。
 - 使用 extended 属性名：`Text.content`、`Image.src`、`Button.label`。
 - 不要使用仅标准 catalog 的 `Text.text`、`Image.url`、`Button.child` 或 CSS kebab-case 样式键。
 - 只使用 Form 组件子集：`Text`、`Image`、`Divider`、`Progress`、`Button`、`Checkbox`、`Row`、`Column`、`List`、`Stack`。
