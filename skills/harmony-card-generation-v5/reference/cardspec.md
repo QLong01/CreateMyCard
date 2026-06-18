@@ -4,7 +4,7 @@
 
 CardSpec 是 V5 卡片结果的一部分，与 DSL 一起描述同一张卡片。最终响应只有一个组合结果：`genui` 代码块中的 DSL JSONL + `cardspec` 代码块中的 JSON 对象。DSL 负责可渲染 Form 组件，CardSpec 负责推荐尺寸、端侧数据能力、刷新计划和持久化契约。DSL 仍按本 skill 的 V5 Form 规则生成：
 
-- `catalogId` 使用 `ohos.a2ui.extended.catalog.form`。
+- `catalogId` 使用 `ohos.a2ui.extended.catalog`。
 - 组件、样式、事件、DataModel 表达式遵循 `reference/protocol.md`、`reference/component-catalog.md` 和 `reference/data-binding.md`。
 - 不要从旧 A2UI 示例复制组件结构或旧 catalog。
 

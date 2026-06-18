@@ -13,7 +13,7 @@
 - 通用状态卡：一个主指标、一个辅助上下文、一个动作。
 - 紧凑信息摘要：把一个实体/概念/地点/事件总结成卡片，而不是文章。
 
-默认输出是使用 `ohos.a2ui.extended.catalog.form` 的单个 Form 服务卡片 surface。
+默认输出是使用 `ohos.a2ui.extended.catalog` 的单个 Form 服务卡片 surface。
 
 ## 支持的尺寸
 
@@ -41,7 +41,7 @@
 
 - 完整页面、多屏流程、重型仪表盘或文章/详情页。
 - 需要大量输入、校验或大型动态列表的复杂表单。
-- Form catalog 10 个支持组件之外的组件。
+- Form 子集 10 个支持组件之外的组件。
 - 需要不受支持的绝对定位或 CSS 类属性的布局。
 - 实时数据获取、设备 API，或应用未提供的宿主函数。
 - 用户没有提供、且不能用本地/资源路径表示的图片或媒体。
@@ -53,7 +53,7 @@
 - 宽度预算：`2x2` 为 `160vp`，横版 `2x4` 为 `320vp`。
 - 高度预算：`2x2` 和 `2x4` 都是 `160vp`。
 - 协议：包含 `createSurface`、`updateComponents`、`updateDataModel` 的 JSONL。
-- Catalog：`ohos.a2ui.extended.catalog.form`。
+- Catalog：`ohos.a2ui.extended.catalog`。
 - 内容密度：`2x2` 有 2 到 3 个主区域；`2x4` 有 3 到 4 个主区域。
 - 交互：默认最多一个主动作，除非用户明确需要更多。
 

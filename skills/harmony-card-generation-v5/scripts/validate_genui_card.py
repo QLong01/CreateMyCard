@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any
 
 
-FORM_CATALOG = "ohos.a2ui.extended.catalog.form"
+FORM_CATALOG = "ohos.a2ui.extended.catalog"
 
 ALLOWED_COMPONENTS = {
     "Text", "Image", "Divider", "Progress", "Button", "Checkbox",
