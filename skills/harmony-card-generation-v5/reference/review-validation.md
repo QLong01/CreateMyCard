@@ -2,17 +2,18 @@
 
 ## 目的
 
-首版草稿写入磁盘后，使用这个流程保持输出有效、紧凑并且视觉完整。
+首版草稿形成 `genui` 与 `cardspec` 两个代码块后，使用这个流程保持输出有效、紧凑并且视觉完整。
 
 ## 端到端流程
 
-1. 读取磁盘上的 DSL 文件；不要从记忆重新起草。
-2. 运行 `python scripts/validate_genui_card.py <file>`。
-3. 直接在同一个文件中修复校验错误，并重复运行直到通过。
+1. 读取草稿中的 `genui` 和 `cardspec` 内容；不要从记忆重新起草。
+2. 用临时文件运行 `python scripts/validate_genui_card.py <temp.dsl.jsonl>`。
+3. 直接修复草稿内容，并重复运行直到通过。
 4. 脚本通过后，使用 `design-review.md` 做设计评审。
 5. 做受保护内容换行评审。
-6. 如果设计评审修改了文件，重新运行校验。
-7. 只有在最终编辑后校验通过时才交付。
+6. 如果设计评审修改了内容，重新运行校验。
+7. 用临时文件运行 `python scripts/validate_cardspec.py <temp.cardspec.json>`。
+8. 只有在最终编辑后相关校验都通过时才交付。
 
 ## 每轮检查清单
 
@@ -20,7 +21,8 @@
 
 - 模式已识别：一句话卡片、已有 DSL 评审，或能力边界。
 - 所选尺寸明确：`2x2` 或 `2x4`。
-- 输出是 JSONL，每行一个 object。
+- `genui` 代码块是 JSONL，每行一个 object。
+- `cardspec` 代码块是一个 JSON object。
 - `createSurface.catalogId` 是 `ohos.a2ui.extended.catalog.form`。
 - `createSurface` 没有 `theme`。
 - 同一 surface 只有一次完整 `updateComponents`。
@@ -37,6 +39,9 @@
 - 所有可点击视觉区域都有 `onClick`。
 - 卡片仍保持紧凑和摘要感。
 - 卡片由可泛化规则构造，而不是从所选模板构造。
+- CardSpec 存在，且 `suggestSize` 与 DSL 尺寸一致。
+- CardSpec 中所有 `capabilityId`、`capabilityVersion` 和 `arguments` 来自已声明能力；静态卡片没有数据能力时也要有最小 CardSpec。
+- DSL 中所有 UI 绑定路径能从 CardSpec 的 `writeResultTo` 和能力 `outputSchema` 推导；静态卡片则从初始 DataModel 推导。
 
 ## 组件/卡片检查
 
