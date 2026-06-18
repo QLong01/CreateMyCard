@@ -5,7 +5,7 @@
 ## 核心常量
 
 - `version`: `"v0.9"`
-- `catalogId`: `"ohos.a2ui.extended.catalog.form"`
+- `catalogId`: `"ohos.a2ui.extended.catalog"`
 - 输出格式：JSONL，每行一个消息 object。
 - 默认输出顺序：`createSurface` -> `updateComponents` -> `updateDataModel`。
 - `updateComponents` 必须在 `createSurface` 之后，同一 surface 仅发送一次完整组件树。
@@ -16,7 +16,7 @@
 Form 是 HarmonyOS A2UI 扩展协议的严格子集：
 
 - 不支持 A2UI 原生组件。
-- 只使用 Form catalog 声明的扩展组件。
+- 使用 extended catalog，并只使用 Form 子集声明的扩展组件。
 - 不新增全量扩展协议之外的组件、属性或语法。
 - 不支持多端自适应断点。
 

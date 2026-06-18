@@ -1,6 +1,6 @@
 ---
 name: harmony-card-generation-v5
-description: "根据 harmonyos-a2ui-form-protocol 生成 HarmonyOS A2UI Form 服务卡片 DSL JSONL：使用 Form catalog、10 个 Form 支持组件、onClick 行为链、表达式/DataModel 和 2x2 或横版 2x4 卡片构造规则。适用于创建、优化、校验或写入 HarmonyOS/A2UI/Form/服务卡片/widget 卡片/DSL/JSONL 产物，目标场景为 160x160vp 或 320x160vp。"
+description: "根据 harmonyos-a2ui-form-protocol 生成 HarmonyOS A2UI Form 服务卡片 DSL JSONL：使用 extended catalog 下的 Form 子集、10 个 Form 支持组件、onClick 行为链、表达式/DataModel 和 2x2 或横版 2x4 卡片构造规则。适用于创建、优化、校验或写入 HarmonyOS/A2UI/Form/服务卡片/widget 卡片/DSL/JSONL 产物，目标场景为 160x160vp 或 320x160vp。"
 ---
 
 # Harmony 卡片生成 V5

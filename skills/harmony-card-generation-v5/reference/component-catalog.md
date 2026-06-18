@@ -7,10 +7,10 @@
 使用：
 
 ```json
-"catalogId": "ohos.a2ui.extended.catalog.form"
+"catalogId": "ohos.a2ui.extended.catalog"
 ```
 
-不要把全量 extended catalog 或 Basic Catalog 的属性名混入 Form surface。
+不要把 Form 子集之外的 extended 组件或 Basic Catalog 的属性名混入 Form surface。
 
 ## 支持组件
 

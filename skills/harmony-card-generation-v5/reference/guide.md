@@ -5,7 +5,7 @@
 生成 JSONL，每行必须且只能有一个 JSON object：
 
 ```jsonl
-{"version":"v0.9","createSurface":{"surfaceId":"sample-card","catalogId":"ohos.a2ui.extended.catalog.form"}}
+{"version":"v0.9","createSurface":{"surfaceId":"sample-card","catalogId":"ohos.a2ui.extended.catalog"}}
 {"version":"v0.9","updateComponents":{"surfaceId":"sample-card","components":[{"id":"root","component":"Column","children":["title"],"styles":{"width":160,"height":160,"borderRadius":22,"clip":true}},{"id":"title","component":"Text","content":"{{ $__dataModel.title }}","styles":{"fontSize":16,"fontWeight":700}}]}}
 {"version":"v0.9","updateDataModel":{"surfaceId":"sample-card","path":"/","value":{"title":"Sample"}}}
 ```
@@ -13,7 +13,7 @@
 规则：
 
 - `version` 永远是 `"v0.9"`。
-- `catalogId` 永远是 `"ohos.a2ui.extended.catalog.form"`。
+- `catalogId` 永远是 `"ohos.a2ui.extended.catalog"`。
 - `createSurface` 不写 `theme`。
 - `updateComponents` 必须在 `createSurface` 之后，同一 surface 只写一次完整组件树。
 - 所有消息保持同一个 `surfaceId`。
@@ -50,7 +50,7 @@
 
 ## Form 属性名
 
-桌面卡片使用 Form catalog。使用：
+桌面卡片使用 extended catalog 下的 Form 子集。使用：
 
 - `Text.content`，不要用 `Text.text`。
 - `Image.src`，不要用 `Image.url`。
@@ -115,7 +115,7 @@
 
 - [ ] 每行一个 JSON object。
 - [ ] 所有消息使用同一个 `surfaceId`。
-- [ ] 使用 Form catalog。
+- [ ] 使用 extended catalog。
 - [ ] `createSurface` 没有 `theme`。
 - [ ] 只有一次 `updateComponents`。
 - [ ] 存在 `root`，且所有 child 引用可解析。

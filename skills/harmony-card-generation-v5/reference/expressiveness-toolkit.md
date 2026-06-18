@@ -1,6 +1,6 @@
 # 表现力工具箱
 
-使用这些技法，在不超出 HarmonyOS A2UI Form catalog 的前提下创造视觉丰富度。
+使用这些技法，在不超出 HarmonyOS A2UI Form 子集的前提下创造视觉丰富度。
 
 ## 1. 线性渐变 Shell
 

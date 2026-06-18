@@ -26,7 +26,7 @@
 
 - 输出不是 JSONL，或每行不止一个 object。
 - `version` 不是 `"v0.9"`。
-- `createSurface.catalogId` 不是 `ohos.a2ui.extended.catalog.form`。
+- `createSurface.catalogId` 不是 `ohos.a2ui.extended.catalog`。
 - `createSurface` 包含 `theme`。
 - 同一 surface 有多次 `updateComponents`。
 - `surfaceId` 不一致。
