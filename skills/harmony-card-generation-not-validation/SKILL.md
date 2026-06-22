@@ -163,6 +163,7 @@ description: "生成 HarmonyOS A2UI Form 服务卡片完整结果：一个 genui
 - `genui` 和 `cardspec` 是同一个卡片结果的两个部分，不要把 CardSpec 当外挂、附件或另一个项目产物。
 - 静态卡片也输出 `cardspec`；可以只包含 `suggestSize`，不要虚构 `dataBindings`。
 - 动态卡片必须在 `cardspec.dataBindings` 中声明端侧能力调用。
+- 数据绑定均使用path这个形式，不要使用表达式，如$__dataModel.meeting.title，忽略兜底说明。
 
 默认 `genui` JSONL 顺序：
 
