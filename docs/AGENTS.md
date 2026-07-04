@@ -20,13 +20,20 @@
 
 一期重点只覆盖一方应用和系统能力，例如天气、日历、系统设置、运动健康等。三方 App 数据、跨端数据和复杂页面型需求不作为默认动态能力支持，必须通过能力注册表明确声明后才能生成动态 CardSpec。
 
+关键文件说明：
+- ./skills/harmony-card-generation-NewSkill为按照目标链路设计的skill。(需持续优化与刷新)
+- ./skills/harmony-card-generation为针对之前链路设计的旧版skill，之前的链路让主Agent自行完成，没有调用微服务。
+- ./skills/harmony-card-generation/reference/capability/event-capability/click-event.md为事件能力清单
+- ./skills/harmony-card-generation/reference/data-capability为端侧数据能力清单(持续扩充中)
+- ./skills/harmony-card-generation/reference/asset-library.md为端侧素材库清单
+
 ## 最高优先级
 
 开发时按以下优先级处理冲突：
 
 1. `docs/云侧方案设计.md`
 2. 本文件
-3. `skills/harmony-card-generation-path-first/` 下的协议、布局、能力和校验规则
+3. `skills/harmony-card-generation/` 下的协议、布局、能力和校验规则
 4. 历史模板、样例 `.dat`、旧版 skill 文档
 
 历史模板只能作为视觉参考，不能作为协议依据。模板中出现的旧尺寸、`theme`、emoji、网络图、未声明事件或不合规属性，不得复制到新实现。
