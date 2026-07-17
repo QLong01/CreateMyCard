@@ -3,11 +3,15 @@
 Owns the static list of built-in validators and the stage/short-circuit logic.
 ``validators`` are grouped by responsibility so it is obvious at a glance which
 subsystem a given validator belongs to.
+
+The online variant of this pipeline ships only ``hard`` and ``semantic`` stages.
+The ``quality`` stage exists in the stage enum for CLI symmetry with the offline
+version but has no validators attached — colour / aesthetic checks are the
+responsibility of the ``generateWidgetCard`` microservice for online output.
 """
 
 from __future__ import annotations
 
-from .aesthetic import QualityValidator
 from .asset_validator import AssetValidator
 from .binding_validator import BindingValidator
 from .cardspec_validator import CardSpecValidator
@@ -33,10 +37,6 @@ EFFECTIVE_VALIDATORS = [
     EffectiveCapabilityValidator(),
 ]
 
-AESTHETIC_VALIDATORS = [
-    QualityValidator(),
-]
-
 
 PIPELINE_BLOCKING_CODES = {
     "DSL_JSON_PARSE_FAILED",
@@ -48,9 +48,9 @@ def selected_stages(stage: str) -> list[str]:
         return ["hard"]
     if stage == "semantic":
         return ["hard", "semantic"]
-    # "quality" and "all" both run every stage. Without ColorValidator the
-    # quality stage is empty by default; it only carries diagnostics when
-    # ``enable_aesthetic`` is turned on and QualityValidator joins the pipeline.
+    # "quality" and "all" both run every declared stage. The online variant has
+    # no quality-stage validators, so passing "quality" or "all" is functionally
+    # identical to passing "semantic".
     return ["hard", "semantic", "quality"]
 
 
@@ -61,11 +61,8 @@ def run_pipeline(
     stage: str,
     *,
     stop_on_stage_error: bool = False,
-    enable_aesthetic: bool = False,
 ) -> None:
     validators = list(STATIC_VALIDATORS) + list(EFFECTIVE_VALIDATORS)
-    if enable_aesthetic:
-        validators.extend(AESTHETIC_VALIDATORS)
     for current_stage in selected_stages(stage):
         if stop_on_stage_error and current_stage == "semantic" and reporter.has_error("hard"):
             return

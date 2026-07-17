@@ -10,7 +10,7 @@ Default runtime posture (both CLI and Python API):
   就退出 1"的历史行为，加 ``--fail-on-error``。
 
 需要更详细报告或 CI 阻塞时显式覆盖：``--format text|json``、``--strict``、
-``--fail-on-error``、``--cardspec``、``--enable-aesthetic`` 等。
+``--fail-on-error``、``--cardspec`` 等。
 """
 
 from __future__ import annotations
@@ -66,11 +66,6 @@ def main() -> int:
         action="store_true",
         help="Exit with code 1 when errors are found. By default the CLI always exits 0 to stay non-blocking for the caller.",
     )
-    parser.add_argument(
-        "--enable-aesthetic",
-        action="store_true",
-        help="Enable the aesthetic quality validator (still under alignment with offline content).",
-    )
     args = parser.parse_args()
 
     dsl_text = ""
@@ -94,7 +89,6 @@ def main() -> int:
             stop_on_stage_error=args.stop_on_stage_error,
             skill_dir=SCRIPT_DIR.parent,
             capabilities_dir=capabilities_dir,
-            enable_aesthetic=args.enable_aesthetic,
         ),
     )
 

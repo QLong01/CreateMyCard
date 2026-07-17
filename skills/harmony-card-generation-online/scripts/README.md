@@ -1,6 +1,8 @@
-# Datamodel-First 卡片校验器
+# Datamodel-First 卡片校验器（online 版）
 
-`scripts` 目录用于校验 HarmonyOS A2UI Form 卡片产物（三行 `genui` JSONL + `cardspec` JSON）。
+`scripts` 目录用于校验 HarmonyOS A2UI Form 卡片产物（三行 `genui` JSONL + `cardspec` JSON），是 `harmony-card-generation-offline` 校验器的**精简版**：移除了美学质检模块与颜色校验，只保留协议、组件、CardSpec、表达式、素材、绑定、跨文件一致等硬/半硬约束。
+
+美学、字号阶梯、间距节奏、颜色层级等主观质量项由云侧 `generateWidgetCard` 微服务负责，不在本地校验器中重复实现。
 
 ## 默认运行姿态
 
@@ -15,9 +17,9 @@ Python API 提供两个入口：
 - `validate_dsl(dsl_text) -> str`：DSL only 便捷入口，直接返回 `render_model` 字符串，把 CardSpec-only 诊断从结果里剔除。用于其它工具、Agent 或服务接接口。
 - `validate_card(...) -> Reporter`：功能全集入口，返回 `Reporter` 对象，可以进一步渲染、结构化处理，或按需打开 CardSpec / effectiveCapabilities 校验。
 
-需要更详细报告或 CI 阻塞时显式覆盖：`--format text|json`、`--strict`、`--fail-on-error`、`--cardspec`、`--enable-aesthetic` 等。
+需要更详细报告或 CI 阻塞时显式覆盖：`--format text|json`、`--strict`、`--fail-on-error`、`--cardspec` 等。
 
-下文命令默认在 `skills/harmony-card-generation-offline/` 目录下运行；如果在仓库根目录运行，把 `python scripts/validate_card.py` 替换为 `python skills/harmony-card-generation-offline/scripts/validate_card.py`。
+下文命令默认在 `skills/harmony-card-generation-online/` 目录下运行；如果在仓库根目录运行，把 `python scripts/validate_card.py` 替换为 `python skills/harmony-card-generation-online/scripts/validate_card.py`。
 
 校验分两类：
 
@@ -44,9 +46,9 @@ python scripts/validate_card.py draft.md
 
 ````md
 ```genui
-{"version":"v0.9","createSurface":{}}
-{"version":"v0.9","updateComponents":{}}
-{"version":"v0.9","updateDataModel":{}}
+{"version":"v0.9","createSurface":{"surfaceId":"card","catalogId":"ohos.a2ui.extended.catalog.form"}}
+{"version":"v0.9","updateComponents":{"surfaceId":"card","root":"root","components":[...]}}
+{"version":"v0.9","updateDataModel":{"surfaceId":"card","path":"/","value":{...}}}
 ```
 ```cardspec
 {"title":"天气","description":"今日天气","suggestSize":"2x4","dataBindings":[]}
@@ -189,7 +191,6 @@ python scripts/validate_card.py \
 - `--strict`：只有和 `--fail-on-error` 一起使用才有意义，把 warning 也算作 error。
 - `--stop-on-stage-error`：hard/semantic 出错后停止后续阶段。
 - `--capabilities-dir`：`cloud-new` 能力目录，用于解析素材 id 和动态数据路径。
-- `--enable-aesthetic`：显式开启美学质检模块（默认关闭，见下方"美学模块状态"）。
 
 退出码：默认永远 `0`。开 `--fail-on-error` 后：`0` 无 error；`1` 存在 error，或额外指定 `--strict` 且存在 warning。
 
@@ -263,7 +264,7 @@ reporter = validate_card(
 
 ## 动态校验边界
 
-动态 effective 校验等价于“最终 DSL/CardSpec 是否使用了 effective 白名单之外的能力”。它不做：
+动态 effective 校验等价于"最终 DSL/CardSpec 是否使用了 effective 白名单之外的能力"。它不做：
 
 - 不检查候选能力是否合理。
 - 不复算 `DeviceCapabilityResolver`。
@@ -278,11 +279,13 @@ reporter = validate_card(
 | --- | --- | --- |
 | `hard` | 协议/结构错误必须先修 | `ProtocolValidator`、`ComponentValidator`、`CardSpecValidator`、`ExpressionValidator`、`AssetValidator` |
 | `semantic` | 结构 OK 后跑语义规则 | `BindingValidator`、`CrossValidator`、`EffectiveCapabilityValidator`（仅动态模式） |
-| `quality` | 语义 OK 后跑质量规则 | 默认空；仅在 `--enable-aesthetic` 打开时由 `QualityValidator` 承担 |
+| `quality` | 保留 stage 但没有 validator | 空 |
 
-颜色（对比度、token 回溯、渐变结构、场景拓展色一致性）与其它主观质量项全部交给美学模块负责；关闭美学模块时 `quality` 阶段不产生任何诊断。
+在线场景下颜色和美学都由 `generateWidgetCard` 微服务负责，本地只做协议/结构/语义/能力白名单四类硬约束。`--stage quality` 与 `--stage all` 在效果上都等同于 `--stage semantic`。
 
 默认 `--stage all` 即三阶段全跑；`--stop-on-stage-error` 会在 hard 出错后跳过 semantic、任一阶段累计出 error 后跳过 quality，用于交互式修复减少回合。若 JSONL 出现 `DSL_JSON_PARSE_FAILED`（属于 hard 阶段的致命错），流水线会整体停在解析层不再往后走。
+
+online 版本不包含美学质检和颜色校验（`AESTHETIC_*` 诊断、`QualityValidator`、`ColorValidator`、`0–100 质量分` 都不会产生）；如需这些能力，请使用 `skills/harmony-card-generation-offline/scripts/` 并追加 `--enable-aesthetic`。
 
 ## 目录结构
 
@@ -293,7 +296,7 @@ scripts/
   rules/
     config/
       protocol.json                 # 协议、组件、CardSpec、模板 children、事件 handler 结构规则
-      layout.json                   # 布局/字号/间距/美学阈值（当前仅美学模块读取）
+      layout.json                   # 布局/字号/间距参考阈值（本 skill 保留供未来扩展）
       style.json                    # createSurface 允许样式、组件样式字段与枚举
       asset.json                    # 资源路径禁止模式与 allowlist
       expression.json               # 表达式长度、括号深度、禁用变量/操作符/关键字、允许函数
@@ -321,25 +324,28 @@ scripts/
     binding_validator.py            # semantic 阶段
     cross_validator.py              # semantic 阶段
     effective_capability_validator.py # semantic 阶段（动态模式）
-    aesthetic/                      # 可选美学子系统（仅 --enable-aesthetic）
-      __init__.py                   # 导出 QualityValidator
-      validator.py                  # BaseValidator 包装（原 quality_validator.py）
-      engine.py                     # 独立美学分析引擎（原 validate_aesthetic.py）
 ```
 
-## 美学模块状态
+## 与 offline 版本的差异
 
-美学质检（`validators/aesthetic/`）保留在源码中，但默认不参与流水线：
+| 项 | offline | online |
+| --- | --- | --- |
+| 美学质检 (`validators/aesthetic/`) | ✅ 保留，`--enable-aesthetic` 开启 | ❌ 已删除，不会加载 |
+| `AESTHETIC_*` 诊断 / 0-100 质量分 | ✅ | ❌ |
+| `layout.json.qualityWeights` | ✅ 保留 | ❌ 删除（仅美学模块读取） |
+| `ValidationOptions.enable_aesthetic` | ✅ | ❌ 删除 |
+| CLI 参数 `--enable-aesthetic` | ✅ | ❌ 删除 |
+| `ColorValidator` (`quality` 阶段) | ❌ 已删除（颜色归美学模块） | ❌ 已删除（颜色不在本地校验器职责范围） |
+| `rules/config/color.json` | ❌ 已删除 | ❌ 已删除 |
+| 协议 / 组件 / 表达式 / 素材 / 绑定 / 跨文件一致 | ✅ | ✅（完全一致） |
+| 动态 `effectiveCapabilities` 校验 | ✅ | ✅（完全一致） |
+| 默认 `--format` / DSL-only / 非阻塞退出码 / `validate_dsl` API | ✅ | ✅（完全一致） |
 
-- 默认 `--stage all` 不再触发它，`validate_card` 不会因它产生 warning/error。
-- 加 `--enable-aesthetic` 才在 quality 阶段独立跑并输出 `AESTHETIC_*` 诊断。
-- `layout.json` 里的 `defaultPadding`/`allowedFontSizes`/`allowedSpacing`/`qualityWeights` 等阈值当前只被这个模块读取；美学模块还会尝试从 `layout.json` 读取 `contrast*` / `max*` 等键，若缺失回退到内置默认。静态色板 / 字号阈值与本地 2x2 模板对齐前，默认关闭以避免误报。
-- 美学模块整体位于 `validators/aesthetic/`：`engine.py` 是纯分析引擎，`validator.py` 只是流水线包装；核心流水线不会在 `--enable-aesthetic` 关闭时 import 到 engine 的内部符号。
-- 颜色相关规则（token 回溯、hex 白名单、渐变结构）现在完全由美学模块承担；核心流水线已移除独立的 `ColorValidator`，`rules/config/color.json` 也已删除。
+online 场景下卡片的最终协议合规、颜色和美学质检都由 `generateWidgetCard` 微服务负责；本地脚本用于开发调试和 artifact 侧回归验证。
 
 ## Validator 与 rules 对应表
 
-流水线里每个 validator 都通过 `RuleRegistry`（`rules/config/*.json` + `rules/schemas/*.json` + `reference/design/*.md` 若干条目）读取规则，validator 自身不硬编码具体阈值；下表列出实际的读取关系。
+流水线里每个 validator 都通过 `RuleRegistry`（`rules/config/*.json` + `rules/schemas/*.json`）读取规则，validator 自身不硬编码具体阈值；下表列出实际的读取关系。
 
 ### hard 阶段
 
@@ -361,11 +367,9 @@ scripts/
 
 ### quality 阶段
 
-默认没有任何 validator 参与本阶段。开启 `--enable-aesthetic` 后：
+online 版本没有任何 validator 挂在 quality 阶段。stage 名保留是为了和 offline 版本 CLI 参数保持一致；`--stage quality` / `--stage all` 与 `--stage semantic` 效果相同。
 
-| Validator | 读取的规则来源 | 主要检查 |
-| --- | --- | --- |
-| `QualityValidator` | `layout.json` 中的美学阈值（对比度、字号/圆角/阴影层级上限等）；委托 `aesthetic/engine.py` | 产出 `AESTHETIC_*` 诊断和 0–100 质量分；颜色对比度、hex 回溯、渐变复杂度等都在此判定 |
+颜色 / 对比度 / 美学都由 `generateWidgetCard` 微服务承担；本地不做二次判定。
 
 ### 规则文件到 validator 的反查表
 
@@ -373,10 +377,9 @@ scripts/
 - `rules/config/expression.json` → `ExpressionValidator`。
 - `rules/config/style.json` → `ProtocolValidator`（`createSurfaceAllowedStyles`）；其余字段目前给模型/文档使用，validator 未直接读。
 - `rules/config/asset.json` → `AssetValidator`（含 `RuleRegistry.asset_allowlist` 汇总）。
-- `rules/config/layout.json` → `QualityValidator` / `aesthetic/engine.py`（仅美学模块）。
+- `rules/config/layout.json` → 保留供未来扩展；online 版本无 validator 读取。
 - `rules/config/diagnostics.zh-CN.json` → `Reporter`：为 `add()` 未显式传 `message/fixHint` 的诊断提供默认中文文案。
 - `rules/schemas/capability.*.schema.json` → `RuleRegistry.capabilities`，被 `BindingValidator`、`CrossValidator` 用作静态数据能力；动态模式下这些会被 `context.effective_data_capabilities` 覆盖。
 - `rules/schemas/event.click.schema.json` → `BindingValidator._check_event_handlers`。
-- `reference/design/asset-library.md` 是给模型阅读的素材目录；素材白名单已完整落到 `rules/config/asset.json.allowlist`，`RuleRegistry` 不再运行时扫描该文档。颜色 token 参考文档不再被核心校验器扫描；美学模块自带对比度和层级判定。
-- 组件目录 / 表达式语法 / CardSpec JSON Schema 参考文档：真相源已迁移到 `protocol.json`、`expression.json`、`protocol.json.cardSpec`；供人阅读的说明由 `reference/protocol/*.md` 承担，`rules/` 下不再冗余保留。
-- `rules/config/color.json` 已随 `ColorValidator` 一起删除。
+- `rules/config/color.json`：已随 `ColorValidator` 一起删除。
+- 组件目录 / 表达式语法 / CardSpec JSON Schema 参考文档：真相源在 `protocol.json`、`expression.json`、`protocol.json.cardSpec`；供人阅读的说明由 offline skill 的 `reference/protocol/*.md` 承担，本 skill 未内嵌复制品。
