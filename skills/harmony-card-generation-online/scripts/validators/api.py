@@ -44,7 +44,6 @@ class ValidationOptions:
     stop_on_stage_error: bool = False
     skill_dir: Path | None = None
     capabilities_dir: Path | None = None
-    enable_aesthetic: bool = False
 
 
 def validate_card(
@@ -82,7 +81,6 @@ def validate_card(
             reporter,
             opts.stage,
             stop_on_stage_error=opts.stop_on_stage_error,
-            enable_aesthetic=opts.enable_aesthetic,
         )
     return reporter
 
